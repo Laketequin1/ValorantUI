@@ -1,0 +1,5 @@
+QuitKeys: ('alt', 'esc')
+RefreshRate: 0
+ShowFPS: False
+VolumeSterio: 1
+VolumeMic: 1
