@@ -1,12 +1,12 @@
-import pyautogui, time, random
+import pyautogui, time, random, concurrent.futures, keyboard, pyscreeze
 from pygame import mixer
-import time, concurrent.futures, pyautogui, keyboard
+from PIL import ImageGrab
 
-IMAGES = {'ace.png':(904, 177, 111, 74), 'victory.png':(594, 471, 731, 132), 'defeat.png':(632, 475, 665, 127), 'kill.png':(935, 809, 53, 75), 'spectate.png':(133, 850, 19, 26)}
+IMAGES = {'images/ace.png':(904, 177, 111, 74), 'images/victory.png':(594, 471, 731, 132), 'images/defeat.png':(632, 475, 665, 127), 'images/kill.png':(935, 809, 53, 75), 'images/spectate.png':(133, 850, 19, 26)}
 
 def ace(device):
 	mixer.init(devicename = device) # Initialize it with the correct device
-	mixer.music.load("audio\The Verkkars.mp3") # Load the mp3
+	mixer.music.load("audio/The Verkkars.mp3") # Load the mp3
 	mixer.music.set_volume(1.5)
 	mixer.music.play() # Play it
 
@@ -23,7 +23,7 @@ def ace(device):
 
 def outro(device):
 	mixer.init(devicename = device) # Initialize it with the correct device
-	mixer.music.load("audio\Outro.mp3") # Load the mp3
+	mixer.music.load("audio/Outro.mp3") # Load the mp3
 	mixer.music.set_volume(0.6)
 	mixer.music.play() # Play it
 
@@ -40,7 +40,7 @@ def outro(device):
 
 def kill(device):
 	mixer.init(devicename = device) # Initialize it with the correct device
-	mixer.music.load(f"audio\Enemy\enemy ({random.randint(1, 41)}).mp3") # Load the mp3
+	mixer.music.load(f"audio/Enemy/enemy ({random.randint(1, 41)}).mp3") # Load the mp3
 	mixer.music.set_volume(2.5)
 	mixer.music.play() # Play it
 
@@ -56,7 +56,7 @@ def kill(device):
 	pyautogui.keyUp('t')
 
 def get_images(image, box):
-	if image == 'kill.png':
+	if image == 'images/kill.png':
 		return pyautogui.locateOnScreen(image, confidence=0.67, region=box)
 	return pyautogui.locateOnScreen(image, confidence=0.8, region=box)
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
 	devices = ["CABLE Input (VB-Audio Virtual Cable)", None]
 
-	last_tick = {'kill': False, 'ace': False, 'end': False}
+	last_tick = {'kill': 0, 'ace': 0, 'end': 0}
 
 	with concurrent.futures.ProcessPoolExecutor() as executor:
 		while True:
@@ -76,43 +76,46 @@ if __name__ == "__main__":
 				for image, box in zip(IMAGES.keys(), IMAGES.values()):
 					located_images[image] = executor_mini.submit(get_images, image, box)
 			
-			if located_images['kill.png'].result():
+			if located_images['images/kill.png'].result():
 				spectating = False
-				if located_images['spectate.png'].result():
+				if located_images['images/spectate.png'].result():
 					spectating = True
 				if not spectating and not last_tick['kill']:
 					print("Kill!")
 					executor.map(kill, devices)
 				this_tick['kill'] = True
 			if not this_tick['kill']:
-				last_tick['kill'] = False
+				if last_tick['kill'] > 0:
+					last_tick['kill'] -= 1
 			else:
-				last_tick['kill'] = True
+				last_tick['kill'] = 2
 
-			if located_images['ace.png'].result():
+			if located_images['images/ace.png'].result():
 				if not last_tick['ace']:
 					print("Ace!")
 					executor.map(ace, devices)
 				this_tick['ace'] = True
 			if not this_tick['ace']:
-				last_tick['ace'] = False
+				if last_tick['ace'] > 0:
+					last_tick['ace'] -= 1
 			else:
-				last_tick['ace'] = True
+				last_tick['ace'] = 2
 
-			if located_images['victory.png'].result():		
+			if located_images['images/victory.png'].result():		
 				if not last_tick['end']:
 					print("End of game - Won!")
 					executor.map(outro, devices)
 				this_tick['end'] = True
 			
-			if located_images['defeat.png'].result():
+			if located_images['images/defeat.png'].result():
 				if not last_tick['end']:
 					print("End of game - Lost!")
 					executor.map(outro, devices)
 				this_tick['end'] = True
 
 			if not this_tick['end']:
-				last_tick['end'] = False
+				if last_tick['end'] > 0:
+					last_tick['end'] -= 1
 			else:
-				last_tick['end'] = True
+				last_tick['end'] = 2
 			

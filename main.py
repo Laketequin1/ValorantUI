@@ -23,6 +23,14 @@ with open("settings.txt", 'r') as f:
         
         settings[setting[0]] = ast.literal_eval(setting[1])
 
+# Sprite
+class Sprite:
+    settings = pygame.image.load("images\settings.png")
+    settings = pygame.transform.scale(settings, (72, 72))
+
+    exit = pygame.image.load("images\exit.png")
+    exit = pygame.transform.scale(exit, (72, 72))
+
 # Transparent color
 TRANSPARENT = (255, 0, 128)
 
@@ -35,7 +43,7 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 
 # Text
-TITLE_NAME = 'To name UI title'
+TITLE_NAME = 'Valorant UI'
 
 font = pygame.font.Font("fonts\LEMONMILK.otf", 80)
 TITLE = font.render(TITLE_NAME, True, BLACK, WHITE).convert_alpha()
@@ -97,9 +105,13 @@ def main():
 
         screen.fill(TRANSPARENT)
         
-        pygame.draw.rect(screen, DARK_RED, pygame.Rect(0, HEIGHT - 20, WIDTH, HEIGHT))
+        pygame.draw.rect(screen, RED, pygame.Rect(0, 110, WIDTH, 5))
         
-        screen.blit(TITLE, (150, 20))
+        screen.blit(TITLE, (200, 0))
+
+        screen.blit(Sprite.settings, (20, 20))
+        screen.blit(Sprite.exit, (WIDTH - 20 - Sprite.exit.get_width(), 20))
+
         
         pygame.display.update()
         
