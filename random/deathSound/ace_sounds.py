@@ -44,16 +44,16 @@ def kill(device):
 	mixer.music.set_volume(2.5)
 	mixer.music.play() # Play it
 
-	#pyautogui.keyDown('t')
+	pyautogui.keyDown('t')
 	running = True
 	while mixer.music.get_busy() and running:  # wait for music to finish playing
-		#pyautogui.keyDown('t')
+		pyautogui.keyDown('t')
 		time.sleep(0.1)
 		if keyboard.is_pressed("*"):
 			running = False
 			print("Stopping ace music")
 			mixer.music.stop()
-	#pyautogui.keyUp('t')
+	pyautogui.keyUp('t')
 
 def get_images(image, box):		
 	return pyautogui.locateOnScreen(image, confidence=0.8, region=box)
