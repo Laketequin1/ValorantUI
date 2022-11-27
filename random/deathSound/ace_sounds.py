@@ -61,7 +61,7 @@ def get_images(image, box):
 def get_kills(box):
 	pic = ImageGrab.grab(bbox = box)
 
-	for i in range(20):
+	for i in range(21):
 		image = pyscreeze.locate(f'images/kills/kill{i}.png', pic, confidence=0.7)
 		if image:
 			return True
