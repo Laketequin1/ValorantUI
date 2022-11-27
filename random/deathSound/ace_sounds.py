@@ -2,7 +2,7 @@ import pyautogui, time, random, concurrent.futures, keyboard, pyscreeze
 from pygame import mixer
 from PIL import ImageGrab
 
-IMAGES = {'images/ace.png':(904, 177, 111, 74), 'images/victory.png':(594, 471, 731, 132), 'images/defeat.png':(632, 475, 665, 127), 'images/kill.png':(935, 809, 53, 75), 'images/spectate.png':(133, 850, 19, 26)}
+IMAGES = {'images/ace.png':(904, 177, 111, 74), 'images/victory.png':(594, 471, 731, 132), 'images/defeat.png':(632, 475, 665, 127), 'images/spectate.png':(133, 850, 19, 26)}
 
 def ace(device):
 	mixer.init(devicename = device) # Initialize it with the correct device
@@ -44,21 +44,27 @@ def kill(device):
 	mixer.music.set_volume(2.5)
 	mixer.music.play() # Play it
 
-	pyautogui.keyDown('t')
+	#pyautogui.keyDown('t')
 	running = True
 	while mixer.music.get_busy() and running:  # wait for music to finish playing
-		pyautogui.keyDown('t')
+		#pyautogui.keyDown('t')
 		time.sleep(0.1)
 		if keyboard.is_pressed("*"):
 			running = False
 			print("Stopping ace music")
 			mixer.music.stop()
-	pyautogui.keyUp('t')
+	#pyautogui.keyUp('t')
 
-def get_images(image, box):
-	if image == 'images/kill.png':
-		return pyautogui.locateOnScreen(image, confidence=0.67, region=box)
+def get_images(image, box):		
 	return pyautogui.locateOnScreen(image, confidence=0.8, region=box)
+
+def get_kills(box):
+	pic = ImageGrab.grab(bbox = box)
+
+	for i in range(20):
+		image = pyscreeze.locate(f'images/kills/kill{i}.png', pic, confidence=0.7)
+		if image:
+			return True
 
 if __name__ == "__main__":
 	print("Ace sounds")
@@ -75,8 +81,9 @@ if __name__ == "__main__":
 			with concurrent.futures.ThreadPoolExecutor(max_workers=round(len(IMAGES.keys())/2)) as executor_mini:
 				for image, box in zip(IMAGES.keys(), IMAGES.values()):
 					located_images[image] = executor_mini.submit(get_images, image, box)
+				located_images["kill"] = executor_mini.submit(get_kills, (890, 790, 1010, 910))
 			
-			if located_images['images/kill.png'].result():
+			if located_images['kill'].result():
 				spectating = False
 				if located_images['images/spectate.png'].result():
 					spectating = True
