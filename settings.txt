@@ -1,5 +1,5 @@
 QuitKeys: ('alt', 'esc')
-RefreshRate: 0
-ShowFPS: False
-VolumeSterio: 1
-VolumeMic: 1
+OpenKeys: ('alt', 'ctrl')
+RefreshRate: 40
+Volume: 1
+InspectGunCPS: 50

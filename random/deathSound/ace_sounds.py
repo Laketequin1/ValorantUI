@@ -61,7 +61,7 @@ def get_images(image, box):
 def get_kills(box):
 	pic = ImageGrab.grab(bbox = box)
 
-	for i in range(21):
+	for i in range(22):
 		image = pyscreeze.locate(f'images/kills/kill{i}.png', pic, confidence=0.7)
 		if image:
 			return True
@@ -69,7 +69,7 @@ def get_kills(box):
 if __name__ == "__main__":
 	print("Ace sounds")
 
-	devices = ["CABLE Input (VB-Audio Virtual Cable)", None]
+	devices = ["CABLE Input (VB-Audio Virtual Cable)"]
 
 	last_tick = {'kill': 0, 'ace': 0, 'end': 0}
 
