@@ -169,84 +169,107 @@ def print_button(ThreadRunner, name):
     while name in ThreadRunner.get_names():
         print("text")
 
-def kill_sounds(ThreadRunner, name, volume_multi):
-    last_tick = {'kill': 0}
-    devices = ["CABLE Input (VB-Audio Virtual Cable)", None]
+class Sounds:
+    kill = False
+    outro = False
+    ace = False
+    volume_multi = 1
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        while name in ThreadRunner.get_names():
-            start = time.time()
-            this_tick = {'kill': False}
-            located_images = {}
-            
-            located_images['images/spectate.png'] = get_images('images/spectate.png', (133, 850, 19, 26))
-            located_images['kill'] = get_kills((890, 790, 1010, 910))
-            
-            if located_images['kill']:
-                spectating = False
-                if located_images['images/spectate.png']:
-                    spectating = True
-                if not spectating and not last_tick['kill']:
-                    kill_index = random.randint(1, 41)
-                    results = []
-                    for dev in devices:
-                        results.append(executor.submit(kill, dev, kill_index, volume_multi))
-                this_tick['kill'] = True
+    @classmethod
+    def toggle(cls, ThreadRunner, name, sound, volume_multi):
+        cls.volume_multi = volume_multi
 
-            if not this_tick['kill']:
-                if last_tick['kill'] > 0:
-                    last_tick['kill'] -= 1
-            else:
-                last_tick['kill'] = 2
-            print(time.time() - start)
+        running = cls.kill or cls.outro or cls.ace
 
-def ace_sounds(ThreadRunner, name, volume_multi):
-    last_tick = {'ace': 0}
-    devices = ["CABLE Input (VB-Audio Virtual Cable)", None]
+        setattr(Sounds, sound, not getattr(Sounds, sound))
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        while name in ThreadRunner.get_names():
-            this_tick = {'ace': False}
-            located_images = {}
-            
-            located_images['images/ace.png'] = get_images('images/ace.png', (904, 177, 111, 74))
-            
-            if located_images['images/ace.png']:
-                if not last_tick['ace']:
-                    results = []
-                    for dev in devices:
-                        results.append(executor.submit(ace, dev, volume_multi))
-                this_tick['ace'] = True
+        if not running:
+            cls.playsounds()
+    
+    @classmethod
+    def playsounds(cls):
+        last_tick = {'kill': 0, 'ace': 0, 'end': 0}
+        devices = ["CABLE Input (VB-Audio Virtual Cable)", None]
 
-            if not this_tick['ace']:
-                if last_tick['ace'] > 0:
-                    last_tick['ace'] -= 1
-            else:
-                last_tick['ace'] = 20
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            while (cls.kill or cls.outro or cls.ace):
+                this_tick = {'kill': False, 'ace': False, 'end': False}
+                located_images = {'kill': False, 'images/spectate.png': False, 'images/ace.png': False, 'images/victory.png':False, 'images/defeat.png':False}
+                
+                workers = 0
+                if cls.ace:
+                    workers += 1
+                if cls.kill:
+                    workers += 2
+                if cls.outro:
+                    workers += 2
+                
+                if workers > 3:
+                    workers = 3
+                if workers < 0:
+                    workers = 1
 
-def outro_sounds(ThreadRunner, name, volume_multi):
-    last_tick = {'end': 0}
-    devices = ["CABLE Input (VB-Audio Virtual Cable)", None]
+                with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor_mini:
+                    if cls.ace:
+                        located_images['images/ace.png'] = executor_mini.submit(get_images, 'images/ace.png', (904, 177, 111, 74))
+                    if cls.kill:
+                        located_images["kill"] = executor_mini.submit(get_kills, (890, 790, 1010, 910))
+                        located_images['images/spectate.png'] = executor_mini.submit(get_images, 'images/spectate.png', (133, 850, 19, 26))
+                    if cls.outro:
+                        located_images['images/victory.png'] = executor_mini.submit(get_images, 'images/victory.png', (594, 471, 731, 132))
+                        located_images['images/defeat.png'] = executor_mini.submit(get_images, 'images/defeat.png', (632, 475, 665, 127))
+                
+                if located_images['kill']:
+                    if located_images['kill'].result():
+                        spectating = False
+                        if located_images['images/spectate.png'].result():
+                            spectating = True
+                        if not spectating and not last_tick['kill']:
+                            kill_index = random.randint(1, 41)
+                            results = []
+                            for dev in devices:
+                                results.append(executor.submit(kill, dev, kill_index, cls.volume_multi))
+                        this_tick['kill'] = True
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        while name in ThreadRunner.get_names():
-            this_tick = {'end': False}
-            located_images = {}
-            
-            located_images['images/victory.png'] = get_images('images/victory.png', (594, 471, 731, 132))
-            located_images['images/defeat.png'] = get_images('images/defeat.png', (632, 475, 665, 127))
-            
-            if located_images['images/victory.png'] or located_images['images/defeat.png']:        
-                if not last_tick['end']:
-                    results = []
-                    for dev in devices:
-                        results.append(executor.submit(outro, dev, volume_multi))
-                this_tick['end'] = True
-            if not this_tick['end']:
-                if last_tick['end'] > 0:
-                    last_tick['end'] -= 1
-            else:
-                last_tick['end'] = 2
+                if not this_tick['kill']:
+                    if last_tick['kill'] > 0:
+                        last_tick['kill'] -= 1
+                else:
+                    last_tick['kill'] = 2
+                
+                if located_images['images/ace.png']:
+                    if located_images['images/ace.png'].result():
+                        if not last_tick['ace']:
+                            results = []
+                            for dev in devices:
+                                results.append(executor.submit(ace, dev, cls.volume_multi))
+                        this_tick['ace'] = True
+
+                if not this_tick['ace']:
+                    if last_tick['ace'] > 0:
+                        last_tick['ace'] -= 1
+                else:
+                    last_tick['ace'] = 20
+                
+                victory_result = None
+                defeat_result = None
+                if located_images['images/victory.png']:
+                    victory_result = located_images['images/victory.png'].result()
+                if located_images['images/defeat.png']:
+                    defeat_result = located_images['images/defeat.png'].result()
+
+                if victory_result or defeat_result:        
+                    if not last_tick['end']:
+                        results = []
+                        for dev in devices:
+                            results.append(executor.submit(outro, dev, cls.volume_multi))
+                    this_tick['end'] = True
+                if not this_tick['end']:
+                    if last_tick['end'] > 0:
+                        last_tick['end'] -= 1
+                else:
+                    last_tick['end'] = 30
+                
 
 def onetap_only(ThreadRunner, name):
     chat_open = False
@@ -371,21 +394,21 @@ class Utility(Button):
         self.last_click_tick = False
         self.enabled = False
 
-    def toggle(self, *extra_args):
+    def toggle(self, disable_still_runs, *extra_args):
         self.enabled = not self.enabled
         self.invert()
-        if self.enabled:
+        if self.enabled or disable_still_runs:
             ThreadRunner.add_thread(self.name, self.function, *self.function_args, *extra_args)
         else:
             ThreadRunner.end_thread(self.name)
 
-    def update(self, mouse_down, mouse_pos, *extra_args):
+    def update(self, mouse_down, mouse_pos, disable_still_runs, *extra_args):
         if self.rect.collidepoint(mouse_pos) and mouse_down and not self.last_click_tick:
             self.last_click_tick = True
             pygame.mixer.music.load("audio/click.wav") # Load the mp3
             pygame.mixer.music.set_volume(1)
             pygame.mixer.music.play() # Play it
-            self.toggle(*extra_args)
+            self.toggle(disable_still_runs, *extra_args)
 
         if not self.rect.collidepoint(mouse_pos) or not mouse_down:
             self.last_click_tick = False
@@ -398,9 +421,9 @@ settings_button = Button(pygame.image.load("images\settings.png"), (20, 20), ope
 exit_button = Button(pygame.image.load("images\exit.png"), (WIDTH - 94, 20), exit, 0.2, set_forground)
 
 # Utilities
-LINE_ONE_FUNCTIONS = [kill_sounds, onetap_only, gun_inspect]
-LINE_TWO_FUNCTIONS = [ace_sounds, print_button, print_button]
-LINE_THREE_FUNCTIONS = [outro_sounds, print_button, print_button]
+LINE_ONE_FUNCTIONS = [Sounds.toggle, onetap_only, gun_inspect]
+LINE_TWO_FUNCTIONS = [Sounds.toggle, print_button, print_button]
+LINE_THREE_FUNCTIONS = [Sounds.toggle, print_button, print_button]
 
 line_one_images = [Utility(image, (400 + 475 * i, 265), LINE_ONE_FUNCTIONS[i], LINE_ONE[i], 1, set_forground) for i, image in enumerate(line_one)]
 line_two_images = [Utility(image, (400 + 475 * i, 300), LINE_TWO_FUNCTIONS[i], LINE_TWO[i], 1, set_forground) for i, image in enumerate(line_two)]
@@ -488,20 +511,20 @@ def main():
 
             for text in line_one_images:
                 if text.name == "Gun inspect":
-                    text.update(mouse_down, mouse_pos, settings["InspectGunCPS"])
+                    text.update(mouse_down, mouse_pos, False, settings["InspectGunCPS"])
                 elif text.name == "Kills":
-                    text.update(mouse_down, mouse_pos, settings["Volume"])
-                text.update(mouse_down, mouse_pos)
+                    text.update(mouse_down, mouse_pos, True, 'kill', settings["Volume"])
+                text.update(mouse_down, mouse_pos, False)
             
             for text in line_two_images:
                 if text.name == "Ace":
-                    text.update(mouse_down, mouse_pos, settings["Volume"])
-                text.update(mouse_down, mouse_pos)
+                    text.update(mouse_down, mouse_pos, True, 'ace', settings["Volume"])
+                text.update(mouse_down, mouse_pos, False)
             
             for text in line_three_images:
                 if text.name == "Outro":
-                    text.update(mouse_down, mouse_pos, settings["Volume"])
-                text.update(mouse_down, mouse_pos)
+                    text.update(mouse_down, mouse_pos, True, 'outro', settings["Volume"])
+                text.update(mouse_down, mouse_pos, False)
 
         # Render
         if rendering:
